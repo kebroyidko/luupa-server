@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1773168741001,
+      "tag": "0000_typical_swordsman",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773222370672,
+      "tag": "0001_exotic_boomer",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773225623221,
+      "tag": "0002_wakeful_randall",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1773256684700,
+      "tag": "0003_narrow_karen_page",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1773858466416,
+      "tag": "0004_material_butterfly",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774462986103,
+      "tag": "0005_famous_boomer",
+      "breakpoints": true
+    }
+  ]
+}
