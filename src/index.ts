@@ -1,11 +1,13 @@
 import { Hono } from "hono";
 import { internalApp } from "./internal/index.js";
+import { miniApp } from "./miniapp/index.js";
 import { seedSuperuser } from "./db/seed.js";
 import { serveStatic } from "hono/bun";
 
 await seedSuperuser();
 
 const app = new Hono();
+app.route("/miniapp", miniApp);
 app.route("/internal", internalApp);
 app.use("/public/*", serveStatic({ root: "./" }));
 

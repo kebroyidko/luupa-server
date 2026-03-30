@@ -30,6 +30,12 @@ categoryRoutes.post("/", async (c) => {
   const name = formData.get("name");
   const isActive = formData.get("is_active") === "true";
   const file = formData.get("thumbnail");
+  let metaFields = [];
+  const rawMeta = formData.get("meta_fields");
+
+  if (rawMeta) {
+    try { metaFields = JSON.parse(rawMeta); } catch {}
+  }
 
   if (!name) return c.json({ error: "name is required" }, 400);
 
@@ -41,7 +47,7 @@ categoryRoutes.post("/", async (c) => {
     thumbnail = await uploadImage(avif, key);
   }
 
-  const [created] = await db.insert(categories).values({ name, thumbnail, isActive }).returning();
+  const [created] = await db.insert(categories).values({ name, thumbnail, isActive, metaFields }).returning();
   return c.json(created, 201);
 });
 
@@ -53,9 +59,17 @@ categoryRoutes.patch("/:id", async (c) => {
   const name = formData.get("name");
   const isActive = formData.get("is_active");
   const file = formData.get("thumbnail");
+  const raw = formData.get("meta_fields");
 
   if (name) allowed.name = name;
   if (isActive !== null) allowed.isActive = isActive === "true";
+  if (raw !== null) {
+    try {
+      allowed.metaFields = JSON.parse(raw);
+    } catch {
+      return c.json({ error: "meta_fields must be valid JSON" }, 400);
+    }
+  }
 
   if (file && file.size > 0) {
     const [existing] = await db.select().from(categories).where(eq(categories.id, id));

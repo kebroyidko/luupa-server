@@ -2,7 +2,8 @@
   "name": "server",
   "scripts": {
     "dev": "bun run --hot src/index.ts",
-    "worker": "bun run src/jobs/worker.js"
+    "worker": "bun run src/jobs/worker.js",
+    "scrape-worker": "bun run src/jobs/scrape-worker.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1006.0",

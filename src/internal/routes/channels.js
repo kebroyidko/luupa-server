@@ -128,9 +128,18 @@ channelRoutes.delete("/:id", async (c) => {
   const [existing] = await db.select().from(channels).where(eq(channels.id, id));
   if (!existing) return c.json({ error: "Not found" }, 404);
 
+  const channelProducts = await db.select({ media: products.media }).from(products).where(eq(products.channelId, id));
+  for (const product of channelProducts) {
+    if (!Array.isArray(product.media)) continue;
+    for (const item of product.media) {
+      const key = keyFromUrl(item.url);
+      if (key) await deleteImage(key).catch(() => {});
+    }
+  }
+
   if (existing.profileImage) {
     const key = keyFromUrl(existing.profileImage);
-    if (key) await deleteImage(key);
+    if (key) await deleteImage(key).catch(() => {});
   }
 
   await db.delete(channels).where(eq(channels.id, id));

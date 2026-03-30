@@ -22,6 +22,7 @@ export const categories = pgTable("categories", {
   name: text("name").notNull(),
   thumbnail: text("thumbnail"),
   isActive: boolean("is_active").default(true),
+  metaFields: json("meta_fields").default([]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -59,4 +60,31 @@ export const reports = pgTable("reports", {
   failures: json("failures").default([]),
   startedAt: timestamp("started_at").defaultNow(),
   finishedAt: timestamp("finished_at"),
+});
+
+export const products = pgTable("products", {
+  id: serial("id").primaryKey(),
+  name: text("name"),
+  price: json("price"),
+  description: text("description"),
+  channelId: integer("channel_id").references(() => channels.id, { onDelete: "cascade" }),
+  postId: integer("post_id").notNull(),
+  media: json("media").default([]),
+  categoryId: integer("category_id").references(() => categories.id, { onDelete: "set null" }),
+  meta: json("meta").default({}),
+  isSold: boolean("is_sold").default(false),
+  wasDeletedFromChannel: boolean("was_deleted_from_channel").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  identifier: text("identifier").notNull().unique(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  username: text("username"),
+  allowsWriteToPm: boolean("allows_write_to_pm").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
