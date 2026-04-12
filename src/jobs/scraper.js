@@ -49,21 +49,32 @@ async function getClient(sessionRow) {
   return client;
 }
 
-async function downloadAndUploadMediaItem(client, message) {
+async function downloadAndUploadMediaItem(client, message, generateThumb = false) {
   try {
     const isVideo = message.media?.className === "MessageMediaDocument" &&
       message.media.document?.mimeType?.startsWith("video");
     const isPhoto = message.media?.className === "MessageMediaPhoto";
     if (!isPhoto && !isVideo) return null;
+
     const buffer = await Promise.race([
       client.downloadMedia(message, { thumb: isVideo ? 0 : undefined }),
       new Promise((_, rej) => setTimeout(() => rej(new Error("media timeout")), 15000)),
     ]);
+
     if (!buffer) return null;
-    const avif = await sharp(Buffer.from(buffer)).avif({ quality: 70 }).toBuffer();
+    const src = sharp(Buffer.from(buffer));
+    const avif = await src.clone().avif({ quality: 70 }).toBuffer();
     const key = `products/${randomUUID()}.avif`;
     const url = await uploadImage(avif, key);
-    return { url, type: isVideo ? "video" : "image" };
+
+    let thumb = null;
+    if (isPhoto && generateThumb) {
+      const thumbAvif = await src.clone().resize(180, 180, { fit: "cover" }).avif({ quality: 65 }).toBuffer();
+      const thumbKey = `products/thumbs/${randomUUID()}.avif`;
+      thumb = await uploadImage(thumbAvif, thumbKey);
+    }
+
+    return { url, type: isVideo ? "video" : "image", ...(thumb ? { thumb } : {}) };
   } catch {
     return null;
   }
@@ -121,7 +132,9 @@ async function scrapeChannel(channelRow, allCategories, sessionRow) {
   const fetchedIds = new Set(messages.map(m => m.id));
 
   for (const existing of existingProducts) {
-    if (!fetchedIds.has(existing.postId) && !existing.isSold) {
+    if (existing.isSold || existing.wasDeletedFromChannel) continue;
+    if (!existing.telegramDate || new Date(existing.telegramDate) < since) continue;
+    if (!fetchedIds.has(existing.postId)) {
       await db.update(products)
         .set({ wasDeletedFromChannel: true, updatedAt: new Date() })
         .where(and(eq(products.channelId, channelRow.id), eq(products.postId, existing.postId)));
@@ -215,7 +228,15 @@ async function scrapeChannel(channelRow, allCategories, sessionRow) {
           if (!entry) continue;
 
           const mediaItems = (await Promise.all(
-            entry.group.map(msg => downloadAndUploadMediaItem(mediaClient, msg))
+            entry.group.map(async (msg, idx) => {
+              const mediaSessionRow = await getRandomSession();
+              const mediaClient = await getClient(mediaSessionRow);
+              try {
+                return await downloadAndUploadMediaItem(mediaClient, msg, idx === 0);
+              } finally {
+                try { await mediaClient.disconnect(); } catch {}
+              }
+            })
           )).filter(Boolean);
 
           const region = result.region ?? (channelRow.type === "store" ? channelRow.region : null);
@@ -231,11 +252,13 @@ async function scrapeChannel(channelRow, allCategories, sessionRow) {
             meta: result.meta ?? {},
             isSold: result.is_sold ?? false,
             wasDeletedFromChannel: false,
+            telegramDate: entry.primary.date ? new Date(entry.primary.date * 1000) : null,
             updatedAt: new Date(),
           };
 
           if (existingMap.has(result.post_id)) {
-            await db.update(products).set(productData)
+            const { telegramDate, ...updateData } = productData;
+            await db.update(products).set(updateData)
               .where(and(eq(products.channelId, channelRow.id), eq(products.postId, result.post_id)));
           } else {
             await db.insert(products).values(productData);

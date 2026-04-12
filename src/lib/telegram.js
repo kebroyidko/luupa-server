@@ -66,6 +66,7 @@ export async function fetchChannelInfo(link) {
 
     return {
       name: channel.title,
+      telegramId: String(entity.id),
       subscribers: fullChannel.participantsCount ?? 0,
       description: fullChannel.about ?? null,
       profileImageBuffer,

@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { db } from "../../db/index.js";
-import { channels } from "../../db/schema.js";
+import { channels, products } from "../../db/schema.js";
 import { eq } from "drizzle-orm";
 import sharp from "sharp";
 import { uploadImage, deleteImage } from "../../lib/storage.js";
@@ -56,6 +56,7 @@ channelRoutes.post("/", async (c) => {
 
   const [created] = await db.insert(channels).values({
     name: info.name,
+    telegramId: info.telegramId ?? null,
     subscribers: info.subscribers,
     profileImage,
     link,
@@ -102,6 +103,7 @@ channelRoutes.post("/:id/refresh", async (c) => {
 
   const updates = {
     name: info.name,
+    telegramId: info.telegramId ?? null,
     subscribers: info.subscribers,
     description: info.description,
     updatedAt: new Date(),
@@ -128,20 +130,24 @@ channelRoutes.delete("/:id", async (c) => {
   const [existing] = await db.select().from(channels).where(eq(channels.id, id));
   if (!existing) return c.json({ error: "Not found" }, 404);
 
-  const channelProducts = await db.select({ media: products.media }).from(products).where(eq(products.channelId, id));
-  for (const product of channelProducts) {
-    if (!Array.isArray(product.media)) continue;
-    for (const item of product.media) {
-      const key = keyFromUrl(item.url);
-      if (key) await deleteImage(key).catch(() => {});
-    }
-  }
-
-  if (existing.profileImage) {
-    const key = keyFromUrl(existing.profileImage);
-    if (key) await deleteImage(key).catch(() => {});
-  }
-
   await db.delete(channels).where(eq(channels.id, id));
+
+  const channelProducts = await db.select({ media: products.media }).from(products).where(eq(products.channelId, id));
+
+  (async () => {
+    const keys = [];
+    if (existing.profileImage) keys.push(keyFromUrl(existing.profileImage));
+    for (const p of channelProducts) {
+      if (!Array.isArray(p.media)) continue;
+      for (const item of p.media) {
+        if (item.url) keys.push(keyFromUrl(item.url));
+        if (item.thumb) keys.push(keyFromUrl(item.thumb));
+      }
+    }
+    for (let i = 0; i < keys.length; i += 10) {
+      await Promise.all(keys.slice(i, i + 10).filter(Boolean).map(k => deleteImage(k).catch(() => {})));
+    }
+  })();
+
   return c.json({ ok: true });
 });

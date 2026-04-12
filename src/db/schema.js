@@ -38,6 +38,7 @@ export const typeEnum = pgEnum("channel_type", ["store", "market"]);
 export const channels = pgTable("channels", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  telegramId: text("telegram_id"),
   subscribers: integer("subscribers").default(0),
   profileImage: text("profile_image"),
   link: text("link").notNull().unique(),
@@ -74,6 +75,7 @@ export const products = pgTable("products", {
   meta: json("meta").default({}),
   isSold: boolean("is_sold").default(false),
   wasDeletedFromChannel: boolean("was_deleted_from_channel").default(false),
+  telegramDate: timestamp("telegram_date"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
