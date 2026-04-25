@@ -130,24 +130,23 @@ channelRoutes.delete("/:id", async (c) => {
   const [existing] = await db.select().from(channels).where(eq(channels.id, id));
   if (!existing) return c.json({ error: "Not found" }, 404);
 
-  await db.delete(channels).where(eq(channels.id, id));
-
   const channelProducts = await db.select({ media: products.media }).from(products).where(eq(products.channelId, id));
 
-  (async () => {
-    const keys = [];
-    if (existing.profileImage) keys.push(keyFromUrl(existing.profileImage));
-    for (const p of channelProducts) {
-      if (!Array.isArray(p.media)) continue;
-      for (const item of p.media) {
-        if (item.url) keys.push(keyFromUrl(item.url));
-        if (item.thumb) keys.push(keyFromUrl(item.thumb));
-      }
+  const keys = [];
+  if (existing.profileImage) keys.push(keyFromUrl(existing.profileImage));
+  for (const p of channelProducts) {
+    if (!Array.isArray(p.media)) continue;
+    for (const item of p.media) {
+      if (item.url) keys.push(keyFromUrl(item.url));
+      if (item.thumb) keys.push(keyFromUrl(item.thumb));
     }
-    for (let i = 0; i < keys.length; i += 10) {
-      await Promise.all(keys.slice(i, i + 10).filter(Boolean).map(k => deleteImage(k).catch(() => {})));
-    }
-  })();
+  }
+
+  await db.delete(channels).where(eq(channels.id, id));
+
+  for (let i = 0; i < keys.length; i += 10) {
+    await Promise.all(keys.slice(i, i + 10).filter(Boolean).map(k => deleteImage(k).catch(() => {})));
+  }
 
   return c.json({ ok: true });
 });
