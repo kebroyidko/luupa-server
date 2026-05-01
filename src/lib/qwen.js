@@ -6,7 +6,7 @@ const openai = new OpenAI({
 });
 
 const REGIONS = [
-  "Toshkent shahri", "Andijon", "Buxoro", "Farg'ona", "Jizzax",
+  "Andijon", "Buxoro", "Farg'ona", "Jizzax",
   "Namangan", "Navoiy", "Qashqadaryo", "Samarqand", "Sirdaryo",
   "Surxondaryo", "Toshkent", "Xorazm", "Qoraqalpog'iston Respublikasi",
 ];
