@@ -8,19 +8,36 @@ export const searchRoutes = new Hono();
 const SIMILARITY_THRESHOLD = 0.15;
 const KEYWORD_THRESHOLD = 0.1;
 
+const VALID_REGIONS = [
+  "Andijon", "Buxoro", "Farg'ona", "Jizzax",
+  "Namangan", "Navoiy", "Qashqadaryo", "Samarqand", "Sirdaryo",
+  "Surxondaryo", "Toshkent", "Xorazm", "Qoraqalpog'iston Respublikasi"
+];
+
 searchRoutes.get("/", async (c) => {
   const q = c.req.query("q")?.trim();
   const page = Number(c.req.query("page") ?? 0);
   const limit = Number(c.req.query("limit") ?? 15);
   const offset = page * limit;
+  const region = c.req.query("region")?.trim();
+  const sortBy = c.req.query("sort")?.trim();
 
   if (!q || q.length < 2) return c.json([]);
 
   const keywords = q.toLowerCase().split(/\s+/).filter(Boolean);
-  const keywordConditions = keywords
-    .map(() => `(LOWER(p.name) LIKE ? OR LOWER(ch.name) LIKE ?)`)
-    .join(" AND ");
-  const keywordParams = keywords.flatMap(k => [`%${k}%`, `%${k}%`]);
+
+  let orderByClause;
+  if (sortBy === "cheap") {
+    orderByClause = sql`CAST(REGEXP_REPLACE(p.price::text, '[^0-9.]', '', 'g') AS NUMERIC) ASC NULLS LAST, score DESC, p.telegram_date DESC NULLS LAST`;
+  } else if (sortBy === "expensive") {
+    orderByClause = sql`CAST(REGEXP_REPLACE(p.price::text, '[^0-9.]', '', 'g') AS NUMERIC) DESC NULLS LAST, score DESC, p.telegram_date DESC NULLS LAST`;
+  } else {
+    orderByClause = sql`score DESC, p.telegram_date DESC NULLS LAST`;
+  }
+
+  const regionCondition = region && region !== "all" && VALID_REGIONS.includes(region)
+    ? sql`AND (ch.region = ${region} OR ch.region IS NULL)`
+    : sql``;
 
   const rows = await db.execute(sql`
     SELECT
@@ -36,6 +53,7 @@ searchRoutes.get("/", async (c) => {
       ch.link AS "channelLink",
       ch.telegram_id AS "channelTelegramId",
       ch.profile_image AS "channelProfileImage",
+      ch.region AS "channelRegion",
       (
         CASE WHEN LOWER(p.name) = LOWER(${q}) OR LOWER(ch.name) = LOWER(${q}) THEN 3
              WHEN LOWER(p.name) LIKE ${`%${q}%`} OR LOWER(ch.name) LIKE ${`%${q}%`} THEN 2.5
@@ -54,6 +72,7 @@ searchRoutes.get("/", async (c) => {
       p.is_sold = false
       AND p.was_deleted_from_channel = false
       AND ch.is_active = true
+      ${regionCondition}
       AND (
         LOWER(p.name) LIKE ${`%${q}%`}
         OR LOWER(ch.name) LIKE ${`%${q}%`}
@@ -61,7 +80,7 @@ searchRoutes.get("/", async (c) => {
         OR similarity(p.name, ${q}) > ${SIMILARITY_THRESHOLD}
         OR similarity(ch.name, ${q}) > ${SIMILARITY_THRESHOLD}
       )
-    ORDER BY score DESC, p.telegram_date DESC NULLS LAST
+    ORDER BY ${orderByClause}
     LIMIT ${limit}
     OFFSET ${offset}
   `);

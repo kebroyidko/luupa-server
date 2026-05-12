@@ -90,3 +90,11 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+export const savedProducts = pgTable('saved_products', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  userId: text('user_id').notNull(),
+  productId: text('product_id').notNull(),
+  channelId: text('channel_id').notNull(),
+  savedAt: timestamp('saved_at').notNull()
+});

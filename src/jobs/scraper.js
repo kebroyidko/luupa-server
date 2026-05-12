@@ -239,12 +239,19 @@ async function scrapeChannel(channelRow, allCategories, sessionRow) {
             })
           )).filter(Boolean);
 
-          const region = result.region ?? (channelRow.type === "store" ? channelRow.region : null);
+          function stripMarkdown(text) {
+            if (!text) return text;
+            return text
+              .replace(/\*\*/g, '')
+              .replace(/__/g, '')
+              .replace(/\*/g, '')
+              .replace(/_/g, '');
+          }
 
           const productData = {
             name: result.name ?? null,
             price: result.price ?? null,
-            description: entry.primary.text ?? null,
+            description: stripMarkdown(entry.primary.text) ?? null,
             channelId: channelRow.id,
             postId: result.post_id,
             media: mediaItems,

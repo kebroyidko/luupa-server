@@ -71,6 +71,27 @@
       "when": 1775413858251,
       "tag": "0009_curvy_vapor",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1776194066403,
+      "tag": "0010_daily_blackheart",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1776513661307,
+      "tag": "0011_absent_the_captain",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1777149208013,
+      "tag": "0012_free_nomad",
+      "breakpoints": true
     }
   ]
 }
