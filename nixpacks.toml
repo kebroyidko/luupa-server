@@ -1,2 +1,0 @@
-[phases.setup]
-aptPkgs = ["libstdc++6", "libvips-dev"]
