@@ -14,7 +14,7 @@ const REGIONS = [
 export async function detectRegion(description) {
   if (!description) return null;
   const completion = await openai.chat.completions.create({
-    model: "qwen3.5-plus",
+    model: "qwen3.6-flash-2026-04-16",
     messages: [
       {
         role: "system",
@@ -85,7 +85,7 @@ ${categoryInstructions}`;
   ).join("\n\n---\n\n");
 
   const completion = await openai.chat.completions.create({
-    model: "qwen3.5-plus",
+    model: "qwen3.6-flash-2026-04-16",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userContent },
